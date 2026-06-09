@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bolão Copa 2026 - V3 Premium</title>
+  <title>Bolão Copa 2026 - V5 Mobile Ajustado</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -250,6 +250,35 @@
     @media(max-width:900px){
       body{font-size:16px}.app{flex-direction:column}.sidebar{position:static;width:100%;padding:14px}.brand{min-height:70px;margin-bottom:10px}.content{margin-left:0;padding:14px;display:block}.screen{width:100%}.card,.card.narrow{padding:18px;border-radius:22px}.hero-v4{grid-template-columns:1fr;text-align:center;padding:26px 18px;gap:14px}.hero-v4 h2{font-size:30px;justify-content:center!important}.hero-v4 .subtitle{font-size:15px}.hero-visual{min-height:130px}.cup-img{max-width:140px;max-height:140px}.cup-fallback{width:115px;height:115px}.cup-fallback i{font-size:52px}h2{font-size:26px}.navbtn{font-size:15px}.rule{font-size:15px}.rule strong{font-size:16px}}
 
+
+    /* Ajustes V5: mobile, cadastro, logout, bandeiras e quadrantes */
+    .mobile-logout{display:none;margin:28px auto 18px;max-width:1160px;justify-content:center;text-align:center;}
+    .flag-team{display:inline-flex;gap:6px;align-items:center;justify-content:center;}
+    .podio-list{display:grid;gap:10px;margin-top:8px;}
+    .podio-person{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(105px,1fr) minmax(105px,1fr) 58px;gap:8px;align-items:center;background:rgba(3,7,18,.36);border:1px solid rgba(148,163,184,.18);border-radius:14px;padding:12px;}
+    .podio-person .label{display:none;color:#7dd3fc;text-transform:uppercase;font-size:11px;font-weight:900;letter-spacing:.7px;margin-bottom:2px;}
+    .podio-person strong{font-size:14px;line-height:1.2;}
+    .podio-person .cell{min-width:0;word-break:break-word;}
+    .podio-person .points{text-align:right;color:var(--green);font-weight:900;}
+    .podio-head{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(105px,1fr) minmax(105px,1fr) 58px;gap:8px;color:#7dd3fc;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:.7px;padding:0 12px 4px;}
+    @media(max-width:820px){
+      .login{position:fixed;align-items:flex-start;overflow:auto;padding:18px 14px 36px;}
+      .login-card{margin:8px auto 36px;}
+      .cadastro{padding-bottom:10px;}
+      #btnCadastro{margin-top:14px;margin-bottom:12px;position:relative;z-index:2;}
+      .sidebar .btn-red{display:none!important;}
+      .mobile-logout{display:flex;width:calc(100% - 28px);}
+      .sidebar{gap:10px;}
+      .brand{display:none;}
+      .user{text-align:left;background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.25);border-radius:14px;padding:12px;margin:0 0 10px;}
+      .podio-head{display:none;}
+      .podio-person{grid-template-columns:1fr;gap:9px;padding:14px;}
+      .podio-person .label{display:block;}
+      .podio-person .points{text-align:left;font-size:18px;}
+      .field-card{overflow:hidden;}
+      .table{min-width:0;}
+    }
+
   </style>
 </head>
 <body>
@@ -306,7 +335,7 @@
             <div class="rule"><strong>Placar exato: 10 pontos</strong><br>Exemplo: Palpite 2x1 | Resultado 2x1.</div>
             <div class="rule"><strong>Vencedor + placar de um dos times: 7 pontos</strong><br>Exemplo: Palpite 1x0 | Resultado 10x0. Acertou o vencedor e o placar do perdedor.</div>
             <div class="rule"><strong>Resultado correto sem placar: 5 pontos</strong><br>Exemplo: Palpite 2x1 | Resultado 1x0, ou Palpite 1x1 | Resultado 0x0.</div>
-            <div class="rule"><strong>Campeão: 50 pontos</strong><br><strong>Vice-campeão: 25 pontos</strong><br>Esses palpites só podem ser feitos antes do primeiro jogo da Copa.</div>
+            <div class="rule important"><strong>Campeão: 50 pontos</strong><br><strong>Vice-campeão: 25 pontos</strong><br><strong>Importante:</strong> esses palpites só podem ser feitos antes do primeiro jogo da Copa.</div>
             <div class="rule important"><strong>Importante:</strong> os palpites dos jogos só podem ser salvos até o horário de início da partida.</div>
           </div>
         </div>
@@ -350,6 +379,7 @@
           <table class="table"><thead><tr><th>Posição</th><th>Participante</th><th class="right">Pontos</th></tr></thead><tbody id="rankingBody"></tbody></table>
         </div>
       </section>
+      <button id="mobileLogout" class="navbtn btn-red mobile-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Sair / Deslogar</button>
     </main>
   </div>
 
@@ -408,7 +438,7 @@
   function prepararSelecoes(){
     const c=document.getElementById('selectCampeao'), v=document.getElementById('selectVice');
     c.innerHTML='<option value="">-- Escolha --</option>'; v.innerHTML='<option value="">-- Escolha --</option>';
-    (banco.selecoes||[]).forEach(s=>{c.innerHTML+=`<option value="${s}">${s}</option>`;v.innerHTML+=`<option value="${s}">${s}</option>`});
+    (banco.selecoes||[]).forEach(s=>{c.innerHTML+=`<option value="${s}">${flag(s)} ${s}</option>`;v.innerHTML+=`<option value="${s}">${flag(s)} ${s}</option>`});
     const meu=(banco.palpites||[]).find(p=>p.nome.toLowerCase()===usuarioLogado.toLowerCase() && p.jogo.toUpperCase().startsWith('PÓDIO:'));
     if(meu){const partes=meu.jogo.replace('PÓDIO:','').trim().split(' X ');c.value=partes[0]||'';v.value=partes[1]||'';}
     const aviso=document.getElementById('podioAviso');
@@ -445,7 +475,7 @@
       const meu=(banco.palpites||[]).find(p=>p.nome.toLowerCase()===usuarioLogado.toLowerCase() && String(p.jogo)===String(j.id));
       const valA=meu?meu.placarA:''; const valB=meu?meu.placarB:''; const lock=j.bloqueado;
       const div=document.createElement('div'); div.className='match '+(lock?'locked-game':'');
-      div.innerHTML=`<div class="match-top"><span>${j.grupo||''} • ${formatData(j.data)} ${j.horario}</span><span>${j.status||''}</span></div><div class="match-body" data-id="${j.id}"><div class="teamA">${j.timeA}</div><input class="score" type="number" inputmode="numeric" min="0" id="a_${j.id}" value="${valA}" ${lock?'disabled':''}><div class="vs">X</div><input class="score" type="number" inputmode="numeric" min="0" id="b_${j.id}" value="${valB}" ${lock?'disabled':''}><div class="teamB">${j.timeB}</div></div><div class="status-mini">${lock?'🔒 Palpite encerrado':'✅ Aberto para palpite'}</div>`;
+      div.innerHTML=`<div class="match-top"><span>${j.grupo||''} • ${formatData(j.data)} ${j.horario}</span><span>${j.status||''}</span></div><div class="match-body" data-id="${j.id}"><div class="teamA">${teamLabel(j.timeA)}</div><input class="score" type="number" inputmode="numeric" min="0" id="a_${j.id}" value="${valA}" ${lock?'disabled':''}><div class="vs">X</div><input class="score" type="number" inputmode="numeric" min="0" id="b_${j.id}" value="${valB}" ${lock?'disabled':''}><div class="teamB">${teamLabel(j.timeB)}</div></div><div class="status-mini">${lock?'🔒 Palpite encerrado':'✅ Aberto para palpite'}</div>`;
       cont.appendChild(div);
     });
   }
@@ -471,19 +501,25 @@
     if(!el) return;
     const ps=(banco.palpites||[]).filter(p=>String(p.jogo).toUpperCase().startsWith('PÓDIO:')).sort((a,b)=>a.nome.localeCompare(b.nome));
     if(ps.length===0){el.innerHTML='<div style="color:#94a3b8">Ninguém escolheu campeão e vice ainda.</div>';return}
-    let rows='';
+    let rows='<div class="podio-head"><div>Participante</div><div>Campeão</div><div>Vice</div><div style="text-align:right">Pts</div></div><div class="podio-list">';
     ps.forEach(p=>{
       const partes=String(p.jogo).replace('PÓDIO:','').trim().split(' X ');
-      rows+=`<tr><td>${p.nome}</td><td>🏆 ${partes[0]||'-'}</td><td>🥈 ${partes[1]||'-'}</td><td class="right pts">${p.pontos!==''?'+'+p.pontos:'-'}</td></tr>`;
+      rows+=`<div class="podio-person">
+        <div class="cell"><span class="label">Participante</span><strong>${p.nome}</strong></div>
+        <div class="cell"><span class="label">Campeão</span>${teamLabel(partes[0]||'-','🏆')}</div>
+        <div class="cell"><span class="label">Vice</span>${teamLabel(partes[1]||'-','🥈')}</div>
+        <div class="cell points"><span class="label">Pts</span>${p.pontos!==''?'+'+p.pontos:'-'}</div>
+      </div>`;
     });
-    el.innerHTML=`<table class="table"><thead><tr><th>Participante</th><th>Campeão</th><th>Vice</th><th class="right">Pts</th></tr></thead><tbody>${rows}</tbody></table>`;
+    rows+='</div>';
+    el.innerHTML=rows;
   }
 
   function renderGalera(rodada){
     const grid=document.getElementById('gridGalera'); grid.innerHTML=''; const jogos=(banco.jogos||[]).filter(j=>j.rodada===rodada);
     jogos.forEach(j=>{const ps=(banco.palpites||[]).filter(p=>String(p.jogo)===String(j.id)); let rows='';
       if(ps.length===0) rows='<tr><td colspan="3" style="text-align:center;color:#94a3b8">Ninguém palpitou ainda.</td></tr>'; else ps.sort((a,b)=>a.nome.localeCompare(b.nome)).forEach(p=>{rows+=`<tr><td>${p.nome}</td><td class="right"><strong>${p.placarA} x ${p.placarB}</strong></td><td class="right pts">${p.pontos!==''?'+'+p.pontos:'-'}</td></tr>`});
-      const div=document.createElement('div');div.className='galera-card';div.innerHTML=`<div class="galera-head"><span>${formatData(j.data)} ${j.horario}</span><span>${j.status}</span></div><div class="galera-title">${j.timeA} x ${j.timeB}</div><table class="table"><tbody>${rows}</tbody></table>`;grid.appendChild(div);
+      const div=document.createElement('div');div.className='galera-card';div.innerHTML=`<div class="galera-head"><span>${formatData(j.data)} ${j.horario}</span><span>${j.status}</span></div><div class="galera-title">${teamLabel(j.timeA)} x ${teamLabel(j.timeB)}</div><table class="table"><tbody>${rows}</tbody></table>`;grid.appendChild(div);
     });
   }
 
@@ -503,6 +539,20 @@
 
   function mostrarFasesFinais(){
     alert('Estrutura da Copa 2026:\\n\\n• 12 grupos com 4 seleções\\n• Avançam: 1º e 2º de cada grupo + 8 melhores terceiros\\n• Depois: 16 avos/Round of 32, oitavas, quartas, semifinal, 3º lugar e final\\n\\nNa planilha, deixe rodadas prontas como: 16 avos, Oitavas, Quartas, Semifinal, 3º Lugar e Final. Os confrontos com melhores terceiros dependem da combinação oficial dos classificados e podem ser preenchidos manualmente quando a fase de grupos acabar.');
+  }
+
+
+  function flag(nome){
+    const n=normalize(String(nome||''));
+    const mapa={
+      'africa do sul':'🇿🇦','alemanha':'🇩🇪','arabia saudita':'🇸🇦','argentina':'🇦🇷','australia':'🇦🇺','austria':'🇦🇹','belgica':'🇧🇪','brasil':'🇧🇷','camaroes':'🇨🇲','canada':'🇨🇦','cabo verde':'🇨🇻','catar':'🇶🇦','chile':'🇨🇱','china':'🇨🇳','colombia':'🇨🇴','coreia do sul':'🇰🇷','coreia':'🇰🇷','costa do marfim':'🇨🇮','costa rica':'🇨🇷','croacia':'🇭🇷','dinamarca':'🇩🇰','egito':'🇪🇬','equador':'🇪🇨','escocia':'🏴','eslovaquia':'🇸🇰','eslovenia':'🇸🇮','espanha':'🇪🇸','estados unidos':'🇺🇸','eua':'🇺🇸','franca':'🇫🇷','gana':'🇬🇭','grecia':'🇬🇷','holanda':'🇳🇱','paises baixos':'🇳🇱','inglaterra':'🏴','ira':'🇮🇷','iran':'🇮🇷','italia':'🇮🇹','japao':'🇯🇵','marrocos':'🇲🇦','mexico':'🇲🇽','nigeria':'🇳🇬','noruega':'🇳🇴','nova zelandia':'🇳🇿','panama':'🇵🇦','paraguai':'🇵🇾','peru':'🇵🇪','polonia':'🇵🇱','portugal':'🇵🇹','republica tcheca':'🇨🇿','romenia':'🇷🇴','russia':'🇷🇺','senegal':'🇸🇳','servia':'🇷🇸','suica':'🇨🇭','suecia':'🇸🇪','tunisia':'🇹🇳','turquia':'🇹🇷','ucrania':'🇺🇦','uruguai':'🇺🇾','venezuela':'🇻🇪','pais de gales':'🏴'
+    };
+    return mapa[n]||'🏳️';
+  }
+  function normalize(txt){return String(txt||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();}
+  function teamLabel(nome,prefixo=''){
+    if(!nome || nome==='-') return '-';
+    return `<span class="flag-team">${prefixo?prefixo:''}${flag(nome)} <span>${nome}</span></span>`;
   }
 
   function postJson(obj){return fetch(URL_API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(obj)}).then(r=>r.json()).then(res=>{if(!res.sucesso) throw new Error(res.erro||'Não foi possível salvar.'); return res})}
