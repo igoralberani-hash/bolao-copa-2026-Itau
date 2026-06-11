@@ -427,13 +427,23 @@
 
   ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>ultimaAtividade=Date.now(),{passive:true}));
   setInterval(()=>{if(usuarioLogado && Date.now()-ultimaAtividade>MINUTOS_SESSAO*60*1000){alert('Sua sessão expirou por segurança. Entre novamente.');logout();}},60000);
-  setInterval(()=>{if(usuarioLogado) carregarDados(false);},60000);
+  setInterval(()=>{if(usuarioLogado && podeAtualizarAutomatico()) carregarDados(false);},60000);
 
   window.addEventListener('load', () => {
     if (usuarioLogado) abrirApp(usuarioLogado);
   });
 
   function show(msg){const t=document.getElementById('toast');t.innerText=msg;t.style.display='block';setTimeout(()=>t.style.display='none',3500)}
+  function telaAtiva(){const s=document.querySelector('.screen.active');return s?s.id:''}
+  function podeAtualizarAutomatico(){
+    // Evita apagar palpites digitados e ainda não salvos quando a tela atualiza sozinha.
+    return !salvandoPalpites && telaAtiva() !== 'palpites';
+  }
+  function chaveDraft(id, lado){return `bolao_draft_${usuarioLogado}_${id}_${lado}`;}
+  function salvarDraft(id, lado, valor){localStorage.setItem(chaveDraft(id,lado), valor);}
+  function lerDraft(id, lado){return localStorage.getItem(chaveDraft(id,lado));}
+  function limparDraftJogo(id){localStorage.removeItem(chaveDraft(id,'A'));localStorage.removeItem(chaveDraft(id,'B'));}
+  function temRascunhoNaRodada(){return [...document.querySelectorAll('#listaJogos .score')].some(i=>i && !i.disabled && i.value !== '');}
   function setBtn(id, loading, texto){const b=document.getElementById(id);if(!b)return;b.disabled=loading;b.innerHTML=loading?'<i class="fa-solid fa-spinner fa-spin"></i> Aguarde...':texto}
   function toggleCadastro(){const c=document.getElementById('cadastro');c.style.display=c.style.display==='block'?'none':'block'}
 
@@ -507,9 +517,13 @@
     if(jogos.length===0){cont.innerHTML='<div class="loading">Nenhum jogo nesta rodada.</div>';return}
     jogos.forEach(j=>{
       const meu=(banco.palpites||[]).find(p=>p.nome.toLowerCase()===usuarioLogado.toLowerCase() && String(p.jogo)===String(j.id));
-      const valA=meu?meu.placarA:''; const valB=meu?meu.placarB:''; const lock=j.bloqueado;
+      const draftA = lerDraft(j.id,'A');
+      const draftB = lerDraft(j.id,'B');
+      const valA= draftA !== null ? draftA : (meu?meu.placarA:'');
+      const valB= draftB !== null ? draftB : (meu?meu.placarB:'');
+      const lock=j.bloqueado;
       const div=document.createElement('div'); div.className='match '+(lock?'locked-game':'');
-      div.innerHTML=`<div class="match-top"><span>${j.grupo||''} • ${formatData(j.data)} ${j.horario}</span><span>${j.status||''}</span></div><div class="match-body" data-id="${j.id}"><div class="teamA">${teamLabel(j.timeA)}</div><input class="score" type="number" inputmode="numeric" min="0" id="a_${j.id}" value="${valA}" ${lock?'disabled':''}><div class="vs">X</div><input class="score" type="number" inputmode="numeric" min="0" id="b_${j.id}" value="${valB}" ${lock?'disabled':''}><div class="teamB">${teamLabel(j.timeB)}</div></div><div class="status-mini">${lock?'🔒 Palpite encerrado':'✅ Aberto para palpite'}</div>`;
+      div.innerHTML=`<div class="match-top"><span>${j.grupo||''} • ${formatData(j.data)} ${j.horario}</span><span>${j.status||''}</span></div><div class="match-body" data-id="${j.id}"><div class="teamA">${teamLabel(j.timeA)}</div><input class="score" type="number" inputmode="numeric" min="0" id="a_${j.id}" value="${valA}" oninput="salvarDraft('${j.id}','A',this.value)" ${lock?'disabled':''}><div class="vs">X</div><input class="score" type="number" inputmode="numeric" min="0" id="b_${j.id}" value="${valB}" oninput="salvarDraft('${j.id}','B',this.value)" ${lock?'disabled':''}><div class="teamB">${teamLabel(j.timeB)}</div></div><div class="status-mini">${lock?'🔒 Palpite encerrado':'✅ Aberto para palpite'}</div>`;
       cont.appendChild(div);
     });
   }
@@ -544,6 +558,7 @@
       // Envia um por vez para evitar erro de bloqueio do Google Apps Script.
       for (const item of lista) {
         await postJson(item);
+        limparDraftJogo(item.idJogo);
       }
       show(`${lista.length} palpite(s) salvo(s)!`);
       await carregarDados(false);
