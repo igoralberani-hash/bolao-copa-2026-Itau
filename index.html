@@ -308,7 +308,7 @@
       <h1><i class="fa-solid fa-trophy"></i> Bolão Copa 2026</h1>
       <p class="hint">Entre com seu nome e PIN de 4 dígitos.</p>
       <label for="loginNome">Nome</label>
-      <input id="loginNome" class="input" placeholder="Ex: Jose Silva" autocomplete="name">
+      <input id="loginNome" class="input" placeholder="Ex: José Silva" autocomplete="name">
       <label for="loginPin">PIN</label>
       <input id="loginPin" class="input pin" type="password" inputmode="numeric" maxlength="4" placeholder="****">
       <button id="btnLogin" class="btn btn-primary" onclick="executarLogin()"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>
@@ -415,12 +415,14 @@
   </div>
 
 <script>
-  const URL_API = "https://script.google.com/macros/s/AKfycbyZINhhi6cWebGfHHmDfqde5l-K00s0vuGoXKV5EXf4hycv269SyrEt6rj-gc2gTbxdhA/exec";
+  const URL_API = "https://script.google.com/macros/s/AKfycbxO9jrD2lH2yuRMrzsLDwh4cl6WvioLpAYRje_Akj-pB3F27eE1t6BaQlkuQNuBgh8rHQ/exec";
   let usuarioLogado = localStorage.getItem('bolao_usuario') || '';
   let banco = { selecoes: [], jogos: [], palpites: [], ranking: [], copaJaIniciou: false };
   let rodadaPalpiteAtual = '';
   let rodadaGaleraAtual = '';
   let ultimaAtividade = Date.now();
+  let dadosCarregados = false;
+  let salvandoPalpites = false;
   const MINUTOS_SESSAO = 15;
 
   ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>ultimaAtividade=Date.now(),{passive:true}));
@@ -461,7 +463,7 @@
 
   function carregarDados(mostrarErro=true){
     fetch(`${URL_API}?_=${Date.now()}`).then(r=>r.json()).then(data=>{
-      banco=data; prepararSelecoes(); montarRodadasPalpites(); renderRanking();
+      banco=data; dadosCarregados = true; prepararSelecoes(); montarRodadasPalpites(); renderRanking();
       if(document.getElementById('galera').classList.contains('active')) montarGalera();
       if(document.getElementById('tabela') && document.getElementById('tabela').classList.contains('active')) renderTabelaCopa();
     }).catch(e=>{console.error('Erro ao carregar dados:', e); if(mostrarErro) alert('Erro ao carregar dados: '+(e.message||e));});
@@ -470,7 +472,7 @@
   function prepararSelecoes(){
     const c=document.getElementById('selectCampeao'), v=document.getElementById('selectVice');
     c.innerHTML='<option value="">-- Escolha --</option>'; v.innerHTML='<option value="">-- Escolha --</option>';
-    (banco.selecoes||[]).forEach(sel=>{const opt=`${flagOption(sel)} ${sel}`.trim(); c.innerHTML+=`<option value="${sel}">${opt}</option>`;v.innerHTML+=`<option value="${sel}">${opt}</option>`});
+    (banco.selecoes||[]).forEach(sel=>{c.innerHTML+=`<option value="${sel}">${sel}</option>`;v.innerHTML+=`<option value="${sel}">${sel}</option>`});
     const meu=(banco.palpites||[]).find(p=>p.nome.toLowerCase()===usuarioLogado.toLowerCase() && p.jogo.toUpperCase().startsWith('PÓDIO:'));
     if(meu){const partes=meu.jogo.replace('PÓDIO:','').trim().split(' X ');c.value=partes[0]||'';v.value=partes[1]||'';}
     const aviso=document.getElementById('podioAviso');
@@ -512,12 +514,45 @@
     });
   }
 
-  function enviarPalpitesJogos(){
-    const blocos=[...document.querySelectorAll('#listaJogos .match-body')]; let lista=[];
-    for(const b of blocos){const id=b.dataset.id; const a=document.getElementById('a_'+id); const c=document.getElementById('b_'+id); if(!a||!c||a.disabled) continue; if(a.value!==''&&c.value!==''){const pa=Number(a.value),pb=Number(c.value); if(pa<0||pb<0||!Number.isInteger(pa)||!Number.isInteger(pb)) return alert('Use apenas números inteiros e positivos.'); lista.push({tipo:'Placar Jogo',nome:usuarioLogado,idJogo:id,placarA:pa,placarB:pb});}}
+  async function enviarPalpitesJogos(){
+    if (salvandoPalpites) return;
+    if (!dadosCarregados) {
+      alert('Os dados ainda estão carregando. Aguarde alguns segundos e tente novamente.');
+      carregarDados(true);
+      return;
+    }
+
+    const blocos=[...document.querySelectorAll('#listaJogos .match-body')];
+    let lista=[];
+    for(const b of blocos){
+      const id=b.dataset.id;
+      const a=document.getElementById('a_'+id);
+      const c=document.getElementById('b_'+id);
+      if(!a||!c||a.disabled) continue;
+      if(a.value!==''&&c.value!==''){
+        const pa=Number(a.value),pb=Number(c.value);
+        if(pa<0||pb<0||!Number.isInteger(pa)||!Number.isInteger(pb)) return alert('Use apenas números inteiros e positivos.');
+        lista.push({tipo:'Placar Jogo',nome:usuarioLogado,idJogo:id,placarA:pa,placarB:pb});
+      }
+    }
     if(lista.length===0) return alert('Preencha pelo menos um placar completo.');
+
+    salvandoPalpites = true;
     setBtn('btnSalvarJogos',true,'<i class="fa-solid fa-cloud-arrow-up"></i> Salvar Palpites da Rodada');
-    Promise.all(lista.map(postJson)).then(()=>{show(`${lista.length} palpite(s) salvo(s)!`);carregarDados();}).catch(e=>alert('🚫 '+e.message)).finally(()=>setBtn('btnSalvarJogos',false,'<i class="fa-solid fa-cloud-arrow-up"></i> Salvar Palpites da Rodada'));
+
+    try {
+      // Envia um por vez para evitar erro de bloqueio do Google Apps Script.
+      for (const item of lista) {
+        await postJson(item);
+      }
+      show(`${lista.length} palpite(s) salvo(s)!`);
+      await carregarDados(false);
+    } catch(e) {
+      alert('🚫 '+e.message);
+    } finally {
+      salvandoPalpites = false;
+      setBtn('btnSalvarJogos',false,'<i class="fa-solid fa-cloud-arrow-up"></i> Salvar Palpites da Rodada');
+    }
   }
 
   function montarGalera(){
