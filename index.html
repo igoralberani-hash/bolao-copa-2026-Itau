@@ -439,6 +439,76 @@
       }
     }
 
+    /* V18 - Controle de quem já palpitou e salto para próximo jogo */
+    .palpite-controle{
+      margin-top:12px;
+      border-top:1px solid rgba(148,163,184,.14);
+      padding-top:10px;
+    }
+    .toggle-palpites-jogo{
+      width:100%;
+      min-height:38px;
+      padding:8px 10px;
+      border-radius:12px;
+      font-size:13px;
+      font-weight:900;
+    }
+    .controle-palpites-box{
+      display:none;
+      margin-top:10px;
+      background:rgba(2,6,23,.36);
+      border:1px solid rgba(148,163,184,.14);
+      border-radius:14px;
+      padding:12px;
+    }
+    .controle-palpites-box.open{display:block;}
+    .controle-title{
+      font-size:13px;
+      font-weight:900;
+      color:#7dd3fc;
+      margin:8px 0 6px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .chips-list{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .chip-ok,.chip-pendente{
+      font-size:12px;
+      font-weight:800;
+      border-radius:999px;
+      padding:6px 9px;
+      line-height:1.1;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .chip-ok{background:rgba(34,197,94,.12);color:#bbf7d0;border-color:rgba(34,197,94,.25);}
+    .chip-pendente{background:rgba(250,204,21,.10);color:#fde68a;border-color:rgba(250,204,21,.25);}
+    .next-game-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 9px;
+      border-radius:999px;
+      background:rgba(56,189,248,.12);
+      border:1px solid rgba(56,189,248,.25);
+      color:#7dd3fc;
+      font-size:12px;
+      font-weight:900;
+      margin-left:6px;
+    }
+    .match.proximo-jogo{
+      border-color:rgba(250,204,21,.55);
+      box-shadow:0 0 28px rgba(250,204,21,.12),0 12px 28px rgba(0,0,0,.28);
+    }
+    @media(max-width:820px){
+      .toggle-palpites-jogo{min-height:36px;font-size:12px;}
+      .chip-ok,.chip-pendente{font-size:11px;padding:5px 8px;}
+      .controle-palpites-box{padding:10px;}
+    }
+
   </style>
 </head>
 <body>
@@ -573,7 +643,7 @@
 <script>
   const URL_API = "https://script.google.com/macros/s/AKfycbxO9jrD2lH2yuRMrzsLDwh4cl6WvioLpAYRje_Akj-pB3F27eE1t6BaQlkuQNuBgh8rHQ/exec";
   let usuarioLogado = localStorage.getItem('bolao_usuario') || '';
-  let banco = { selecoes: [], jogos: [], palpites: [], ranking: [], copaJaIniciou: false };
+  let banco = { selecoes: [], jogos: [], palpites: [], ranking: [], participantes: [], copaJaIniciou: false };
   let rodadaPalpiteAtual = '';
   let rodadaGaleraAtual = '';
   let ultimaAtividade = Date.now();
@@ -663,15 +733,125 @@
   }
 
   function montarRodadasPalpites(){
-    const rounds=[...new Set((banco.jogos||[]).map(j=>j.rodada).filter(Boolean))]; const cont=document.getElementById('roundsPalpites'); cont.innerHTML='';
-    rounds.forEach((r,i)=>{const b=document.createElement('button');b.className='round '+((!rodadaPalpiteAtual&&i===0)||rodadaPalpiteAtual===r?'active':'');b.innerText=r;b.onclick=()=>{rodadaPalpiteAtual=r;document.querySelectorAll('#roundsPalpites .round').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderJogos(r)};cont.appendChild(b)});
-    if(!rodadaPalpiteAtual && rounds[0]) rodadaPalpiteAtual=rounds[0]; renderJogos(rodadaPalpiteAtual);
+    const rounds=[...new Set((banco.jogos||[]).map(j=>j.rodada).filter(Boolean))];
+    const cont=document.getElementById('roundsPalpites');
+    cont.innerHTML='';
+
+    const rodadaSugerida = rodadaDoProximoJogo() || rounds[0] || '';
+    if(!rodadaPalpiteAtual || !rounds.includes(rodadaPalpiteAtual)){
+      rodadaPalpiteAtual = rodadaSugerida;
+    }
+
+    rounds.forEach((r)=>{
+      const b=document.createElement('button');
+      b.className='round '+(rodadaPalpiteAtual===r?'active':'');
+      b.innerText=r;
+      b.onclick=()=>{
+        rodadaPalpiteAtual=r;
+        document.querySelectorAll('#roundsPalpites .round').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        renderJogos(r, false);
+      };
+      cont.appendChild(b);
+    });
+
+    renderJogos(rodadaPalpiteAtual, true);
   }
 
-  function renderJogos(rodada){
+  function rodadaDoProximoJogo(){
+    const agora = Date.now();
+    const futuros = (banco.jogos||[])
+      .filter(j=>{
+        const t = getTimeJogo(j);
+        return t && t >= agora && !String(j.status||'').toLowerCase().includes('encerrado');
+      })
+      .sort((a,b)=>getTimeJogo(a)-getTimeJogo(b));
+    return futuros[0] ? futuros[0].rodada : '';
+  }
+
+  function proximoJogoId(){
+    const agora = Date.now();
+    const futuros = (banco.jogos||[])
+      .filter(j=>{
+        const t = getTimeJogo(j);
+        return t && t >= agora && !String(j.status||'').toLowerCase().includes('encerrado');
+      })
+      .sort((a,b)=>getTimeJogo(a)-getTimeJogo(b));
+    return futuros[0] ? String(futuros[0].id) : '';
+  }
+
+  function getTimeJogo(j){
+    if(!j) return null;
+    if(j.dataHoraISO){
+      const d = new Date(j.dataHoraISO);
+      if(!isNaN(d.getTime())) return d.getTime();
+    }
+    if(j.data && j.horario){
+      const d = new Date(`${j.data}T${j.horario}:00`);
+      if(!isNaN(d.getTime())) return d.getTime();
+    }
+    return null;
+  }
+
+  function obterParticipantesBolao(){
+    const lista = (banco.participantes||[]).map(p=>String(p||'').trim()).filter(Boolean);
+    if(lista.length) return lista;
+
+    const nomes = new Set();
+    (banco.ranking||[]).forEach(r=>{ if(r.nome) nomes.add(r.nome); });
+    (banco.palpites||[]).forEach(p=>{ if(p.nome) nomes.add(p.nome); });
+    if(usuarioLogado) nomes.add(usuarioLogado);
+    return [...nomes].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  }
+
+  function nomesQuePalpitaramJogo(idJogo){
+    return [...new Set((banco.palpites||[])
+      .filter(p=>String(p.jogo)===String(idJogo))
+      .map(p=>String(p.nome||'').trim())
+      .filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  }
+
+  function montarControlePalpitesJogo(j){
+    const participantes = obterParticipantesBolao();
+    const palpitaram = nomesQuePalpitaramJogo(j.id);
+    const setPalpitaram = new Set(palpitaram.map(n=>normalize(n)));
+    const pendentes = participantes.filter(nome=>!setPalpitaram.has(normalize(nome)));
+
+    const htmlPalpitaram = palpitaram.length
+      ? palpitaram.map(n=>`<span class="chip-ok">✅ ${n}</span>`).join('')
+      : '<span class="chip-pendente">Ninguém palpitou ainda.</span>';
+
+    const htmlPendentes = pendentes.length
+      ? pendentes.map(n=>`<span class="chip-pendente">⏳ ${n}</span>`).join('')
+      : '<span class="chip-ok">Todos já palpitaram.</span>';
+
+    const total = participantes.length || palpitaram.length;
+    const textoBotao = `👥 Ver controle de palpites (${palpitaram.length}/${total})`;
+
+    return `<div class="palpite-controle">
+      <button type="button" class="btn btn-outline toggle-palpites-jogo" onclick="toggleControlePalpites('${String(j.id).replace(/'/g, "\\'")}')">${textoBotao}</button>
+      <div id="controle_${j.id}" class="controle-palpites-box">
+        <div class="controle-title">✅ Já palpitaram</div>
+        <div class="chips-list">${htmlPalpitaram}</div>
+        <div class="controle-title">⏳ Ainda faltam</div>
+        <div class="chips-list">${htmlPendentes}</div>
+      </div>
+    </div>`;
+  }
+
+  function toggleControlePalpites(idJogo){
+    const el=document.getElementById('controle_'+idJogo);
+    if(el) el.classList.toggle('open');
+  }
+
+  function renderJogos(rodada, destacarProximo=false){
     const cont=document.getElementById('listaJogos'); cont.innerHTML='';
     const jogos=(banco.jogos||[]).filter(j=>j.rodada===rodada);
+    const proxId = proximoJogoId();
+
     if(jogos.length===0){cont.innerHTML='<div class="loading">Nenhum jogo nesta rodada.</div>';return}
+
     jogos.forEach(j=>{
       const meu=(banco.palpites||[]).find(p=>p.nome.toLowerCase()===usuarioLogado.toLowerCase() && String(p.jogo)===String(j.id));
       const draftA = lerDraft(j.id,'A');
@@ -679,13 +859,24 @@
       const valA= draftA !== null ? draftA : (meu?meu.placarA:'');
       const valB= draftB !== null ? draftB : (meu?meu.placarB:'');
       const lock=j.bloqueado;
-      const div=document.createElement('div'); div.className='match '+(lock?'locked-game':'');
-      div.innerHTML=`<div class="match-top"><span>${j.grupo||''} • ${formatData(j.data)} ${j.horario}</span><span>${j.status||''}</span></div><div class="match-body" data-id="${j.id}"><div class="teamA">${teamLabel(j.timeA)}</div><input class="score" type="number" inputmode="numeric" min="0" id="a_${j.id}" value="${valA}" oninput="salvarDraft('${j.id}','A',this.value)" ${lock?'disabled':''}><div class="vs">X</div><input class="score" type="number" inputmode="numeric" min="0" id="b_${j.id}" value="${valB}" oninput="salvarDraft('${j.id}','B',this.value)" ${lock?'disabled':''}><div class="teamB">${teamLabel(j.timeB)}</div></div><div class="status-mini">${lock?'🔒 Palpite encerrado':'✅ Aberto para palpite'}</div>`;
+      const ehProximo = String(j.id)===proxId;
+      const div=document.createElement('div');
+      div.id = 'jogo_'+j.id;
+      div.className='match '+(lock?'locked-game ':'')+(ehProximo?'proximo-jogo':'');
+      const seloProximo = ehProximo ? '<span class="next-game-pill">⭐ Próximo jogo</span>' : '';
+      div.innerHTML=`<div class="match-top"><span>${j.grupo||''} • ${formatData(j.data)} ${j.horario} ${seloProximo}</span><span>${j.status||''}</span></div><div class="match-body" data-id="${j.id}"><div class="teamA">${teamLabel(j.timeA)}</div><input class="score" type="number" inputmode="numeric" min="0" id="a_${j.id}" value="${valA}" oninput="salvarDraft('${j.id}','A',this.value)" ${lock?'disabled':''}><div class="vs">X</div><input class="score" type="number" inputmode="numeric" min="0" id="b_${j.id}" value="${valB}" oninput="salvarDraft('${j.id}','B',this.value)" ${lock?'disabled':''}><div class="teamB">${teamLabel(j.timeB)}</div></div><div class="status-mini">${lock?'🔒 Palpite encerrado':'✅ Aberto para palpite'}</div>${!lock ? montarControlePalpitesJogo(j) : ''}`;
       cont.appendChild(div);
     });
+
+    if(destacarProximo && proxId){
+      setTimeout(()=>{
+        const el=document.getElementById('jogo_'+proxId);
+        if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+      }, 250);
+    }
   }
 
-  async function enviarPalpitesJogos(){
+    async function enviarPalpitesJogos(){
     if (salvandoPalpites) return;
     if (!dadosCarregados) {
       alert('Os dados ainda estão carregando. Aguarde alguns segundos e tente novamente.');
