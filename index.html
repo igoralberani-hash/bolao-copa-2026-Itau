@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bolão Copa 2026 - V13 Produção</title>
+  <title>Bolão Copa 2026 - V21 Mata-Mata Completo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -509,6 +509,29 @@
       .controle-palpites-box{padding:10px;}
     }
 
+
+    /* V21 - Chaveamento Mata-Mata completo */
+    .knockout-wrap{display:grid;gap:18px;}
+    .knockout-alert{background:rgba(250,204,21,.10);border:1px solid rgba(250,204,21,.28);color:#fde68a;border-radius:16px;padding:14px;font-weight:800;line-height:1.45;}
+    .bracket-board{overflow-x:auto;padding:10px 4px 18px;}
+    .bracket-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:18px;min-width:980px;align-items:start;}
+    .bracket-col{display:grid;gap:12px;align-content:start;}
+    .bracket-title{color:#7dd3fc;font-weight:900;text-transform:uppercase;letter-spacing:.8px;text-align:center;margin-bottom:4px;font-size:14px;}
+    .bracket-game{background:linear-gradient(180deg,rgba(8,20,39,.98),rgba(3,7,18,.92));border:1px solid rgba(125,211,252,.22);border-radius:16px;padding:12px;box-shadow:0 12px 28px rgba(0,0,0,.30);position:relative;}
+    .bracket-game.encerrado{border-color:rgba(34,197,94,.40);}
+    .bracket-game.proximo{border-color:rgba(250,204,21,.62);box-shadow:0 0 26px rgba(250,204,21,.13),0 12px 28px rgba(0,0,0,.30);}
+    .bracket-meta{display:flex;justify-content:space-between;gap:8px;color:#9fb0c8;font-size:11px;font-weight:800;border-bottom:1px solid rgba(148,163,184,.14);padding-bottom:7px;margin-bottom:8px;}
+    .bracket-team{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px;border-radius:10px;background:rgba(2,6,23,.38);margin-top:6px;font-size:13px;font-weight:900;}
+    .bracket-team.winner{background:rgba(34,197,94,.13);color:#bbf7d0;border:1px solid rgba(34,197,94,.22);}
+    .bracket-team.undefined{color:#94a3b8;font-style:italic;}
+    .bracket-score{min-width:30px;text-align:right;color:#fff;}
+    .bracket-status{margin-top:8px;text-align:center;font-size:11px;color:#cbd5e1;font-weight:800;}
+    .bracket-origin{margin-top:8px;color:#94a3b8;font-size:10px;text-align:center;line-height:1.35;}
+    .mata-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px;}
+    .mata-card{background:rgba(2,6,23,.35);border:1px solid rgba(148,163,184,.14);border-radius:16px;padding:14px;}
+    .mata-card strong{display:block;color:#7dd3fc;margin-bottom:4px;}
+    @media(max-width:820px){.bracket-grid{min-width:840px;grid-auto-columns:210px;gap:12px}.bracket-game{padding:10px}.bracket-team{font-size:12px}.bracket-meta{font-size:10px}.bracket-board{margin-left:-6px;margin-right:-6px}.knockout-alert{font-size:13px}.mata-summary{grid-template-columns:1fr}.mata-card{padding:12px;font-size:13px}}
+
   </style>
 </head>
 <body>
@@ -543,6 +566,7 @@
       <button class="navbtn" onclick="navegar('galera', this)"><i class="fa-solid fa-users"></i> Palpites da Galera</button>
       <button class="navbtn" onclick="navegar('classificacao', this)"><i class="fa-solid fa-ranking-star"></i> Classificação</button>
       <button class="navbtn" onclick="navegar('tabela', this)"><i class="fa-solid fa-table-list"></i> Tabela da Copa</button>
+      <button class="navbtn" onclick="navegar('mata', this)"><i class="fa-solid fa-sitemap"></i> Mata-Mata</button>
       <button class="navbtn btn-red" onclick="logout()" style="margin-top:auto"><i class="fa-solid fa-right-from-bracket"></i> Sair / Deslogar</button>
     </aside>
 
@@ -628,6 +652,21 @@
         </div>
       </section>
 
+
+      <section id="mata" class="screen">
+        <div class="card">
+          <h2><i class="fa-solid fa-sitemap"></i> Chaveamento Mata-Mata</h2>
+          <p class="subtitle">Os confrontos das próximas fases são preenchidos automaticamente conforme você marca o vencedor dos jogos encerrados na planilha.</p>
+          <div class="knockout-wrap">
+            <div class="knockout-alert">
+              ⚽ O palpite será válido apenas para os 90 minutos. Não será contabilizada prorrogação nem disputa de pênaltis.
+            </div>
+            <div id="mataResumo" class="mata-summary"></div>
+            <div class="bracket-board"><div id="mataBracket" class="bracket-grid"></div></div>
+          </div>
+        </div>
+      </section>
+
       <section id="classificacao" class="screen">
         <div class="card narrow">
           <h2><i class="fa-solid fa-trophy"></i> Classificação</h2>
@@ -641,7 +680,7 @@
   </div>
 
 <script>
-  const URL_API = "https://script.google.com/macros/s/AKfycbxO9jrD2lH2yuRMrzsLDwh4cl6WvioLpAYRje_Akj-pB3F27eE1t6BaQlkuQNuBgh8rHQ/exec";
+  const URL_API = "https://script.google.com/macros/s/AKfycbwd4IY9Qfr0bdl1Y9eLn-ycaAO3w9rB_CPsUtclAkzmbL1Rx-p8-Sc9flrP7OxUSBGhBA/exec";
   let usuarioLogado = localStorage.getItem('bolao_usuario') || '';
   let banco = { selecoes: [], jogos: [], palpites: [], ranking: [], participantes: [], copaJaIniciou: false };
   let rodadaPalpiteAtual = '';
@@ -694,7 +733,7 @@
   function abrirApp(nome){usuarioLogado=nome;document.getElementById('login').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('userBox').innerHTML=`<i class="fa-solid fa-user-check"></i> Olá, ${nome}!`;carregarDados();}
   function logout(){localStorage.removeItem('bolao_usuario');location.reload()}
 
-  function navegar(id,btn){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');btn.classList.add('active'); if(id==='galera') montarGalera(); if(id==='classificacao') renderRanking(); if(id==='tabela') renderTabelaCopa();}
+  function navegar(id,btn){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');btn.classList.add('active'); if(id==='galera') montarGalera(); if(id==='classificacao') renderRanking(); if(id==='tabela') renderTabelaCopa(); if(id==='mata') renderMataMata();}
   function subAba(id,btn){document.querySelectorAll('#palpites .sub').forEach(s=>s.classList.remove('active'));document.querySelectorAll('#palpites .tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');btn.classList.add('active')}
   function mudarAbaGalera(id,btn){document.querySelectorAll('#galera .sub-galera').forEach(s=>s.classList.remove('active'));document.querySelectorAll('#galera .tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');btn.classList.add('active'); if(id==='galeraPodioBox') renderGaleraPodio(); if(id==='galeraJogos') montarGalera();}
 
@@ -703,6 +742,7 @@
       banco=data; dadosCarregados = true; prepararSelecoes(); montarRodadasPalpites(); renderRanking();
       if(document.getElementById('galera').classList.contains('active')) montarGalera();
       if(document.getElementById('tabela') && document.getElementById('tabela').classList.contains('active')) renderTabelaCopa();
+      if(document.getElementById('mata') && document.getElementById('mata').classList.contains('active')) renderMataMata();
     }).catch(e=>{console.error('Erro ao carregar dados:', e); if(mostrarErro) alert('Erro ao carregar dados: '+(e.message||e));});
   }
 
@@ -858,13 +898,13 @@
       const draftB = lerDraft(j.id,'B');
       const valA= draftA !== null ? draftA : (meu?meu.placarA:'');
       const valB= draftB !== null ? draftB : (meu?meu.placarB:'');
-      const lock=j.bloqueado;
+      const lock=j.bloqueado || j.indefinido;
       const ehProximo = String(j.id)===proxId;
       const div=document.createElement('div');
       div.id = 'jogo_'+j.id;
       div.className='match '+(lock?'locked-game ':'')+(ehProximo?'proximo-jogo':'');
       const seloProximo = ehProximo ? '<span class="next-game-pill">⭐ Próximo jogo</span>' : '';
-      div.innerHTML=`<div class="match-top"><span>${j.grupo||''} • ${formatData(j.data)} ${j.horario} ${seloProximo}</span><span>${j.status||''}</span></div><div class="match-body" data-id="${j.id}"><div class="teamA">${teamLabel(j.timeA)}</div><input class="score" type="number" inputmode="numeric" min="0" id="a_${j.id}" value="${valA}" oninput="salvarDraft('${j.id}','A',this.value)" ${lock?'disabled':''}><div class="vs">X</div><input class="score" type="number" inputmode="numeric" min="0" id="b_${j.id}" value="${valB}" oninput="salvarDraft('${j.id}','B',this.value)" ${lock?'disabled':''}><div class="teamB">${teamLabel(j.timeB)}</div></div><div class="status-mini">${lock?'🔒 Palpite encerrado':'✅ Aberto para palpite'}</div>${!lock ? montarControlePalpitesJogo(j) : ''}`;
+      div.innerHTML=`<div class="match-top"><span>${j.grupo||''} • ${formatData(j.data)} ${j.horario} ${seloProximo}</span><span>${j.status||''}</span></div><div class="match-body" data-id="${j.id}"><div class="teamA">${teamLabel(j.timeA)}</div><input class="score" type="number" inputmode="numeric" min="0" id="a_${j.id}" value="${valA}" oninput="salvarDraft('${j.id}','A',this.value)" ${lock?'disabled':''}><div class="vs">X</div><input class="score" type="number" inputmode="numeric" min="0" id="b_${j.id}" value="${valB}" oninput="salvarDraft('${j.id}','B',this.value)" ${lock?'disabled':''}><div class="teamB">${teamLabel(j.timeB)}</div></div><div class="status-mini">${j.indefinido?'⏳ Confronto ainda não definido':(lock?'🔒 Palpite encerrado':'✅ Aberto para palpite')}</div>${!lock ? montarControlePalpitesJogo(j) : ''}`;
       cont.appendChild(div);
     });
 
@@ -1056,6 +1096,7 @@
         renderRanking();
         if(document.getElementById('galera') && document.getElementById('galera').classList.contains('active')) montarGalera();
         if(document.getElementById('tabela') && document.getElementById('tabela').classList.contains('active')) renderTabelaCopa();
+      if(document.getElementById('mata') && document.getElementById('mata').classList.contains('active')) renderMataMata();
         return data;
       });
   }
@@ -1094,8 +1135,84 @@
   function copiarTexto(txt){navigator.clipboard.writeText(txt).then(()=>show('Texto copiado para enviar no WhatsApp!')).catch(()=>prompt('Copie o texto abaixo:',txt))}
 
 
+  function renderMataMata(){
+    const cont=document.getElementById('mataBracket');
+    const resumo=document.getElementById('mataResumo');
+    if(!cont) return;
+    const fasesOrdem=['16 avos','Round of 32','Oitavas','Quartas','Semifinal','3º Lugar','3º lugar','Final'];
+    const jogos=(banco.jogos||[]).filter(j=>{
+      const r=normalize(j.rodada||''); const g=normalize(j.grupo||'');
+      return fasesOrdem.some(f=>normalize(f)===r || normalize(f)===g) || r.includes('oitava') || r.includes('quarta') || r.includes('semi') || r.includes('final') || r.includes('16 avos') || r.includes('round of 32');
+    }).sort((a,b)=>{
+      const ia=indiceFase(a), ib=indiceFase(b);
+      if(ia!==ib) return ia-ib;
+      const ta=getTimeJogo(a)||0, tb=getTimeJogo(b)||0;
+      if(ta!==tb) return ta-tb;
+      return String(a.id).localeCompare(String(b.id),'pt-BR',{numeric:true});
+    });
+
+    if(!jogos.length){
+      cont.innerHTML='<div class="loading">Nenhum jogo de mata-mata encontrado. Verifique se a aba Resultados possui rodadas como 16 avos, Oitavas, Quartas, Semifinal, 3º Lugar e Final.</div>';
+      if(resumo) resumo.innerHTML='';
+      return;
+    }
+
+    const proxId=proximoJogoId();
+    const porFase={};
+    jogos.forEach(j=>{const f=nomeFase(j); if(!porFase[f]) porFase[f]=[]; porFase[f].push(j);});
+    const fases=Object.keys(porFase).sort((a,b)=>indiceNomeFase(a)-indiceNomeFase(b));
+
+    if(resumo){
+      const definidos=jogos.filter(j=>!j.indefinido).length;
+      const encerrados=jogos.filter(j=>normalize(j.status)==='encerrado').length;
+      const pendentes=jogos.length-encerrados;
+      resumo.innerHTML=`<div class="mata-card"><strong>Confrontos</strong>${definidos}/${jogos.length} definidos</div><div class="mata-card"><strong>Encerrados</strong>${encerrados} jogos</div><div class="mata-card"><strong>Pendentes</strong>${pendentes} jogos</div>`;
+    }
+
+    cont.innerHTML=fases.map(fase=>`<div class="bracket-col"><div class="bracket-title">${fase}</div>${porFase[fase].map(j=>cardMataMata(j, String(j.id)===proxId)).join('')}</div>`).join('');
+  }
+
+  function nomeFase(j){return j.rodada || j.grupo || 'Mata-Mata'}
+  function indiceFase(j){return indiceNomeFase(nomeFase(j));}
+  function indiceNomeFase(nome){
+    const n=normalize(nome);
+    if(n.includes('16 avos') || n.includes('round of 32')) return 1;
+    if(n.includes('oitava')) return 2;
+    if(n.includes('quarta')) return 3;
+    if(n.includes('semi')) return 4;
+    if(n.includes('3') || n.includes('terceiro')) return 5;
+    if(n.includes('final')) return 6;
+    return 99;
+  }
+  function vencedorJogoFront(j){
+    if(j.vencedor) return j.vencedor;
+    if(normalize(j.status)!=='encerrado') return '';
+    const a=Number(j.placarAReal), b=Number(j.placarBReal);
+    if(Number.isNaN(a)||Number.isNaN(b)) return '';
+    if(a>b) return j.timeA;
+    if(b>a) return j.timeB;
+    return '';
+  }
+  function cardMataMata(j, ehProximo){
+    const vencedor=normalize(vencedorJogoFront(j));
+    const status=normalize(j.status)==='encerrado'?'encerrado':'';
+    const cls=['bracket-game',status,ehProximo?'proximo':''].filter(Boolean).join(' ');
+    const aScore=j.placarAReal!==''&&j.placarAReal!=null?j.placarAReal:'';
+    const bScore=j.placarBReal!==''&&j.placarBReal!=null?j.placarBReal:'';
+    const undefA=confrontoNomeIndefinido(j.timeA), undefB=confrontoNomeIndefinido(j.timeB);
+    const orig=(j.origemA||j.origemB)?`<div class="bracket-origin">${j.origemA?'A: '+j.origemA:''}${j.origemA&&j.origemB?' • ':''}${j.origemB?'B: '+j.origemB:''}</div>`:'';
+    return `<div class="${cls}">
+      <div class="bracket-meta"><span>${j.id}</span><span>${formatData(j.data)} ${j.horario}</span></div>
+      <div class="bracket-team ${vencedor&&normalize(j.timeA)===vencedor?'winner':''} ${undefA?'undefined':''}"><span>${teamLabel(j.timeA||'A definir')}</span><span class="bracket-score">${aScore}</span></div>
+      <div class="bracket-team ${vencedor&&normalize(j.timeB)===vencedor?'winner':''} ${undefB?'undefined':''}"><span>${teamLabel(j.timeB||'A definir')}</span><span class="bracket-score">${bScore}</span></div>
+      <div class="bracket-status">${j.indefinido?'⏳ Aguardando classificados':(ehProximo?'⭐ Próximo jogo':(j.status||'Aguardando'))}</div>
+      ${orig}
+    </div>`;
+  }
+  function confrontoNomeIndefinido(nome){const n=normalize(nome);return !n || n.startsWith('vencedor ') || n.startsWith('perdedor ') || n==='a definir' || n==='tbd';}
+
   function mostrarFasesFinais(){
-    alert('Estrutura da Copa 2026:\\n\\n• 12 grupos com 4 seleções\\n• Avançam: 1º e 2º de cada grupo + 8 melhores terceiros\\n• Depois: 16 avos/Round of 32, oitavas, quartas, semifinal, 3º lugar e final\\n\\nNa planilha, deixe rodadas prontas como: 16 avos, Oitavas, Quartas, Semifinal, 3º Lugar e Final. Os confrontos com melhores terceiros dependem da combinação oficial dos classificados e podem ser preenchidos manualmente quando a fase de grupos acabar.');
+    navegar('mata', document.querySelector(".navbtn[onclick*=\"mata\"]") || document.querySelector('.navbtn'));
   }
 
 
